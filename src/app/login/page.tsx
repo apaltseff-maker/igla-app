@@ -123,6 +123,12 @@ function LoginForm() {
         )}
         {error && !initError && <div className="text-sm text-red-600">{error}</div>}
 
+        <div className="text-right text-sm">
+          <Link href="/auth/forgot-password" className="text-gray-600 hover:text-black underline">
+            Забыли пароль?
+          </Link>
+        </div>
+
         <button
           className="w-full rounded bg-black text-white py-2 disabled:opacity-60"
           disabled={loading}
