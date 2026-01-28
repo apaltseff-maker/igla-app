@@ -180,7 +180,7 @@ export async function POST(req: Request) {
 
     // Вставляем новые work-строки
     const { error: eLines } = await supabase.from("invoice_lines").insert(
-      lines.map((l) => ({
+      lines.map((l: InvoiceLineData) => ({
         ...l,
         invoice_id,
       }))
@@ -216,7 +216,7 @@ export async function POST(req: Request) {
 
     // Вставляем строки
     const { error: eLines } = await supabase.from("invoice_lines").insert(
-      lines.map((l) => ({
+      lines.map((l: InvoiceLineData) => ({
         ...l,
         invoice_id,
       }))
