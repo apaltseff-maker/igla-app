@@ -27,7 +27,8 @@ export async function GET(req: Request) {
       pdfBytes = new Uint8Array(pdfResult);
     } else {
       // ReadableStream -> ArrayBuffer -> Uint8Array
-      const ab = await new Response(pdfResult as ReadableStream).arrayBuffer();
+      // Use BodyInit to resolve ReadableStream type conflict (Web vs Node)
+      const ab = await new Response(pdfResult as unknown as BodyInit).arrayBuffer();
       pdfBytes = new Uint8Array(ab);
     }
 
