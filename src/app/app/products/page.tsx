@@ -76,7 +76,14 @@ export default async function ProductsPage() {
       throw new Error('Расценка должна быть числом >= 0');
     }
 
-    const { data: profile, error: pErr } = await supabase.from('profiles').select('org_id').single();
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Не авторизован');
+    
+    const { data: profile, error: pErr } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.user.id)
+      .single();
     if (pErr || !profile?.org_id) throw new Error(pErr?.message || 'Нет org_id');
 
     const { error } = await supabase.from('products').insert({

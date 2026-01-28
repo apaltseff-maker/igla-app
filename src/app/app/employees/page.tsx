@@ -58,9 +58,13 @@ export default async function EmployeesPage() {
     if (!code || !full_name || !role) return;
 
     // 1) берём org_id из профиля текущего пользователя
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Не авторизован');
+    
     const { data: profile, error: pErr } = await supabase
       .from('profiles')
       .select('org_id')
+      .eq('id', user.user.id)
       .single();
 
     if (pErr || !profile?.org_id) {
