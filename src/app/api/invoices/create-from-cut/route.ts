@@ -112,8 +112,13 @@ export async function POST(req: Request) {
   });
 
   // planned_total
-  const planned_total = Math.round(lines.reduce((s: number, x) => s + (x.planned_amount ?? 0), 0) * 100) / 100;
-  const final_total = Math.round(lines.reduce((s: number, x) => s + (x.final_amount ?? 0), 0) * 100) / 100;
+  type InvoiceLine = { planned_amount?: number | null; final_amount?: number | null };
+  const planned_total = Math.round(
+    (lines as InvoiceLine[]).reduce<number>((s, x) => s + (x.planned_amount ?? 0), 0) * 100
+  ) / 100;
+  const final_total = Math.round(
+    (lines as InvoiceLine[]).reduce<number>((s, x) => s + (x.final_amount ?? 0), 0) * 100
+  ) / 100;
 
   let invoice_id: string;
 
