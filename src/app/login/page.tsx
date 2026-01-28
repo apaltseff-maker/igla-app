@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [initError, setInitError] = useState<string | null>(null);
@@ -27,11 +27,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (searchParams.get('registered') === 'true') {
-      setRegistered(true);
-    }
-  }, [searchParams]);
+  // Check for registered param
+  const registeredParam = searchParams.get('registered');
+  if (registeredParam === 'true' && !registered) {
+    setRegistered(true);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,6 +114,20 @@ export default function LoginPage() {
         </div>
       </form>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm border rounded-lg p-6">
+          <div className="text-center">Загрузка...</div>
+        </div>
+      </main>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
 
