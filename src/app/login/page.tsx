@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [initError, setInitError] = useState<string | null>(null);
+  const [registered, setRegistered] = useState(false);
   
   const supabase = useMemo(() => {
     try {
@@ -23,6 +26,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('registered') === 'true') {
+      setRegistered(true);
+    }
+  }, [searchParams]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,6 +82,12 @@ export default function LoginPage() {
           />
         </label>
 
+        {registered && (
+          <div className="text-sm text-green-600 bg-green-50 p-3 rounded border border-green-200">
+            Регистрация успешна! Проверьте email для подтверждения (если требуется) и войдите.
+          </div>
+        )}
+
         {initError && (
           <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
             <strong>Ошибка инициализации:</strong> {initError}
@@ -90,6 +105,13 @@ export default function LoginPage() {
         >
           {loading ? 'Входим…' : 'Войти'}
         </button>
+
+        <div className="text-center text-sm text-gray-600">
+          Нет аккаунта?{' '}
+          <Link href="/signup" className="text-black underline">
+            Зарегистрироваться
+          </Link>
+        </div>
       </form>
     </main>
   );
