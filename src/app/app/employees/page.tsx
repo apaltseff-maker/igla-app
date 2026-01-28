@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import ExcelUploadClient from './excel-upload-client';
 
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Админ',
@@ -65,7 +66,10 @@ export default async function EmployeesPage() {
     <main className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Сотрудники</h1>
-        <a className="text-sm underline" href="/app">Назад</a>
+        <div className="flex items-center gap-3">
+          <ExcelUploadClient />
+          <a className="text-sm underline" href="/app">Назад</a>
+        </div>
       </div>
 
       <form action={addEmployee} className="border rounded-lg p-4 grid gap-3 max-w-xl">
