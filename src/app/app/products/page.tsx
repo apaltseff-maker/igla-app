@@ -36,9 +36,19 @@ export default async function ProductsPage() {
     .eq('id', userData.user.id)
     .single();
   
-  if (profileError || !profile) {
+  if (profileError) {
     console.error('Profile error:', profileError);
-    // Если профиля нет - редирект на главную
+    // Если ошибка RLS или профиль не найден - редирект на главную
+    redirect('/app');
+  }
+  
+  if (!profile) {
+    console.error('Profile not found for user:', userData.user.id);
+    redirect('/app');
+  }
+  
+  if (!profile.org_id) {
+    console.error('User has no org_id:', userData.user.id);
     redirect('/app');
   }
   
