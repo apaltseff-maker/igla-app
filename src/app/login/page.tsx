@@ -6,11 +6,15 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [initError, setInitError] = useState<string | null>(null);
+  
   const supabase = useMemo(() => {
     try {
       return createClient();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to create Supabase client:', error);
+      setInitError(errorMessage);
       return null;
     }
   }, []);
@@ -69,7 +73,15 @@ export default function LoginPage() {
           />
         </label>
 
-        {error && <div className="text-sm text-red-600">{error}</div>}
+        {initError && (
+          <div className="text-sm text-red-600 bg-red-50 p-3 rounded border border-red-200">
+            <strong>Ошибка инициализации:</strong> {initError}
+            <div className="mt-2 text-xs">
+              Проверьте, что в Vercel добавлены переменные окружения и проект пересобран (Redeploy).
+            </div>
+          </div>
+        )}
+        {error && !initError && <div className="text-sm text-red-600">{error}</div>}
 
         <button
           className="w-full rounded bg-black text-white py-2 disabled:opacity-60"
