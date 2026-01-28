@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  /* ─── Base ─── */
+  --bg: 248 250 252;           /* slate-50 */
+  --card: 255 255 255;         /* white */
+  --text: 15 23 42;            /* slate-900 */
+  --muted: 100 116 139;        /* slate-500 */
+  --border: 226 232 240;       /* slate-200 */
+
+  /* ─── Primary (graphite) ─── */
+  --primary: 15 23 42;         /* slate-900 */
+  --primary-contrast: 255 255 255;
+
+  /* ─── Accent (amber) ─── */
+  --accent: 245 158 11;        /* amber-500 */
+  --accent-contrast: 17 24 39;
+
+  /* ─── Semantic ─── */
+  --success: 34 197 94;        /* green-500 */
+  --danger: 239 68 68;         /* red-500 */
+
+  /* ─── Radius ─── */
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+}
+
+@theme inline {
+  --color-background: rgb(var(--bg));
+  --color-foreground: rgb(var(--text));
+
+  --color-bg: rgb(var(--bg));
+  --color-card: rgb(var(--card));
+  --color-text: rgb(var(--text));
+  --color-muted: rgb(var(--muted));
+  --color-border: rgb(var(--border));
+  --color-primary: rgb(var(--primary));
+  --color-primary-contrast: rgb(var(--primary-contrast));
+  --color-accent: rgb(var(--accent));
+  --color-accent-contrast: rgb(var(--accent-contrast));
+  --color-success: rgb(var(--success));
+  --color-danger: rgb(var(--danger));
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --shadow-card: 0 14px 35px rgba(2, 6, 23, 0.10);
+  --shadow-soft: 0 8px 22px rgba(2, 6, 23, 0.08);
+  --shadow-glow: 0 0 24px rgba(245, 158, 11, 0.25);
+
+  --radius-xl: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --radius-sm: var(--radius-sm);
+}
+
+/* ─── Base body ─── */
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  font-family: var(--font-sans);
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--bg));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--muted) / 0.6);
+}
+
+/* ─── Focus ring ─── */
+*:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+}
+
+/* ─── Tabular nums ─── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: rgb(var(--accent) / 0.2);
+  color: rgb(var(--text));
+}

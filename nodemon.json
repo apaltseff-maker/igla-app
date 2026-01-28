@@ -1,0 +1,8 @@
+{
+  "watch": ["src", ".env.local"],
+  "ext": "ts,tsx,js,jsx,json",
+  "ignore": [".next", "node_modules"],
+  "exec": "next dev -p 3005 --no-turbopack",
+  "restartable": "rs",
+  "delay": 1000
+}
