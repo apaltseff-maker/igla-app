@@ -21,18 +21,33 @@ export default async function CutDetailsPage({
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect('/login');
 
-  const { data: cut, error: cutErr } = await supabase
-    .from('cuts')
-    .select('id, cut_date, cut_name, note, cutter_employee_id')
-    .eq('id', cutId)
+  // Получаем org_id для проверки доступа
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', userData.user.id)
     .single();
 
-  if (cutErr) throw new Error(cutErr.message);
+  if (!profile?.org_id) {
+    redirect('/app');
+  }
+
+  const { data: cut, error: cutErr } = await supabase
+    .from('cuts')
+    .select('id, cut_date, cut_name, note, cutter_employee_id, org_id')
+    .eq('id', cutId)
+    .eq('org_id', profile.org_id)
+    .single();
+
+  if (cutErr || !cut) {
+    throw new Error(cutErr?.message || 'Крой не найден');
+  }
 
   // Список закройщиков для шапки
   const { data: cutters } = await supabase
     .from('employees')
     .select('id, full_name')
+    .eq('org_id', profile.org_id)
     .eq('active', true)
     .eq('role', 'cutter')
     .order('full_name', { ascending: true });
@@ -40,6 +55,7 @@ export default async function CutDetailsPage({
   const { data: products } = await supabase
     .from('products')
     .select('id, display')
+    .eq('org_id', profile.org_id)
     .eq('active', true)
     .order('display', { ascending: true });
 

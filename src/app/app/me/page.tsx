@@ -13,13 +13,15 @@ export default async function MePage() {
     .eq('id', userData.user.id)
     .single();
 
-  const { data: org } = profile?.org_id
-    ? await supabase
-        .from('organizations')
-        .select('id, name')
-        .eq('id', profile.org_id)
-        .single()
-    : { data: null, error: null };
+  let org: { id: string; name: string } | null = null;
+  if (profile?.org_id) {
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('id', profile.org_id)
+      .single();
+    org = orgData;
+  }
 
   return (
     <main className="p-6 space-y-4">

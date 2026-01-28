@@ -17,11 +17,23 @@ export default async function CutsListPage({
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect("/login");
 
+  // Получаем org_id для фильтрации
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', userData.user.id)
+    .single();
+
+  if (!profile?.org_id) {
+    redirect('/app');
+  }
+
   // поиск по № пачки -> редирект в крой
   if (bundle) {
     const { data: b, error } = await supabase
       .from("cut_bundles")
       .select("cut_id")
+      .eq("org_id", profile.org_id)
       .eq("bundle_no", bundle)
       .maybeSingle();
 

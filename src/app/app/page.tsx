@@ -12,6 +12,27 @@ function daysAgoISO(days: number) {
 export default async function AppHomePage() {
   const supabase = await createClient();
 
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) redirect('/login');
+
+  // Получаем org_id для фильтрации
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('org_id')
+    .eq('id', userData.user.id)
+    .single();
+
+  if (!profile?.org_id) {
+    // Если нет org_id - показываем пустую страницу или редирект
+    return (
+      <main className="p-6">
+        <div className="text-red-600">
+          У вас нет организации. Обратитесь к администратору.
+        </div>
+      </main>
+    );
+  }
+
   // 1) Крои со статусами
   const { data: cuts, error: cutsErr } = await supabase.rpc("cuts_list_with_stats", {
     p_cutter_employee_id: null,
@@ -44,6 +65,7 @@ export default async function AppHomePage() {
   const { data: packRows } = await supabase
     .from("packaging_events")
     .select("packed_qty, defect_qty, packaged_at")
+    .eq("org_id", profile.org_id)
     .gte("packaged_at", `${today}T00:00:00.000Z`)
     .lt("packaged_at", `${today}T23:59:59.999Z`);
 

@@ -8,12 +8,19 @@ export default async function CutCreatePage() {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role, org_id').single();
-  if (!profile?.role || !['admin', 'cutter'].includes(profile.role)) redirect('/app');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, org_id')
+    .eq('id', userData.user.id)
+    .single();
+  
+  if (!profile || !profile.role || !['admin', 'cutter'].includes(profile.role)) redirect('/app');
+  if (!profile.org_id) redirect('/app');
 
   const { data: cutters } = await supabase
     .from('employees')
     .select('id, code, full_name')
+    .eq('org_id', profile.org_id)
     .eq('active', true)
     .eq('role', 'cutter')
     .order('code', { ascending: true });
@@ -30,7 +37,14 @@ export default async function CutCreatePage() {
     if (!cut_name) throw new Error('Название кроя обязательно');
     if (!cutter_employee_id) throw new Error('Сотрудник (закройщик) обязателен');
 
-    const { data: prof, error: pErr } = await supabase.from('profiles').select('org_id').single();
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Не авторизован');
+    
+    const { data: prof, error: pErr } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.user.id)
+      .single();
     if (pErr || !prof?.org_id) throw new Error(pErr?.message || 'Нет org_id');
 
     const { data, error } = await supabase
