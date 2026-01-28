@@ -3,6 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 
 type PriceRow = { product_id: string; color: string; unit_price: number };
 
+type InvoiceLineData = {
+  org_id: string;
+  line_type: "work";
+  product_id: string;
+  color: string;
+  unit_price: number;
+  planned_qty: number;
+  final_qty: number;
+  planned_amount: number;
+  final_amount: number;
+};
+
 export async function POST(req: Request) {
   const supabase = await createClient();
 
@@ -86,7 +98,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const lines = (preview ?? []).map((r: any) => {
+  const lines: InvoiceLineData[] = (preview ?? []).map((r: any) => {
     const product_id = r.product_id as string;
     const color = (r.color as string) ?? "";
     const key = `${product_id}||${color}`;
@@ -100,7 +112,7 @@ export async function POST(req: Request) {
 
     return {
       org_id,
-      line_type: "work",
+      line_type: "work" as const,
       product_id,
       color,
       unit_price,
@@ -112,12 +124,11 @@ export async function POST(req: Request) {
   });
 
   // planned_total
-  type InvoiceLine = { planned_amount?: number | null; final_amount?: number | null };
   const planned_total = Math.round(
-    (lines as InvoiceLine[]).reduce<number>((s, x) => s + (x.planned_amount ?? 0), 0) * 100
+    lines.reduce<number>((s, x) => s + (x.planned_amount ?? 0), 0) * 100
   ) / 100;
   const final_total = Math.round(
-    (lines as InvoiceLine[]).reduce<number>((s, x) => s + (x.final_amount ?? 0), 0) * 100
+    lines.reduce<number>((s, x) => s + (x.final_amount ?? 0), 0) * 100
   ) / 100;
 
   let invoice_id: string;
