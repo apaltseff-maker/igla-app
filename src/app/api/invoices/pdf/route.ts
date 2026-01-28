@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 export const runtime = "nodejs";
 
 export async function GET(req: Request) {
@@ -10,7 +8,7 @@ export async function GET(req: Request) {
     const invoice_id = searchParams.get("invoice_id");
     
     if (!invoice_id) {
-      return NextResponse.json({ error: "invoice_id required" }, { status: 400 });
+      return Response.json({ error: "invoice_id required" }, { status: 400 });
     }
 
     console.log("PDF_IMPORTING_RENDERER");
@@ -34,17 +32,17 @@ export async function GET(req: Request) {
 
     console.log("PDF_SUCCESS", pdfBytes.length, "bytes");
 
-    return new NextResponse(pdfBytes, {
+    return new Response(pdfBytes.buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="invoice_${invoice_id}.pdf"`,
+        "Content-Disposition": `inline; filename="invoice-${invoice_id}.pdf"`,
         "Cache-Control": "no-store",
       },
     });
   } catch (e: any) {
     console.error("PDF_ERROR:", e);
-    return NextResponse.json(
+    return Response.json(
       { error: String(e?.message ?? e), stack: e?.stack ?? null },
       { status: 500 }
     );
