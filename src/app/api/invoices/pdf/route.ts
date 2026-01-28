@@ -17,12 +17,19 @@ export async function GET(req: Request) {
     const { renderInvoicePdf } = await import("@/lib/pdf/render-invoice");
 
     console.log("PDF_RENDERING", invoice_id);
-    const pdfBuffer = await renderInvoicePdf(invoice_id);
+    const pdfResult = await renderInvoicePdf(invoice_id);
 
-    // Convert Buffer to Uint8Array (Buffer is Uint8Array-like but TypeScript needs explicit conversion)
-    const pdfBytes = pdfBuffer instanceof Uint8Array 
-      ? pdfBuffer 
-      : new Uint8Array(pdfBuffer);
+    let pdfBytes: Uint8Array;
+
+    if (pdfResult instanceof Uint8Array) {
+      pdfBytes = pdfResult;
+    } else if (pdfResult instanceof ArrayBuffer) {
+      pdfBytes = new Uint8Array(pdfResult);
+    } else {
+      // ReadableStream -> ArrayBuffer -> Uint8Array
+      const ab = await new Response(pdfResult as ReadableStream).arrayBuffer();
+      pdfBytes = new Uint8Array(ab);
+    }
 
     console.log("PDF_SUCCESS", pdfBytes.length, "bytes");
 
