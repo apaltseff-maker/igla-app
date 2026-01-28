@@ -27,10 +27,23 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for registered param
+  // Check for registered, confirmed, password_reset params
   const registeredParam = searchParams.get('registered');
+  const confirmedParam = searchParams.get('confirmed');
+  const passwordResetParam = searchParams.get('password_reset');
+  const [confirmed, setConfirmed] = useState(false);
+  const [passwordReset, setPasswordReset] = useState(false);
+  
   if (registeredParam === 'true' && !registered) {
     setRegistered(true);
+  }
+  
+  if (confirmedParam === 'true' && !confirmed) {
+    setConfirmed(true);
+  }
+  
+  if (passwordResetParam === 'true' && !passwordReset) {
+    setPasswordReset(true);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -85,6 +98,18 @@ function LoginForm() {
         {registered && (
           <div className="text-sm text-green-600 bg-green-50 p-3 rounded border border-green-200">
             Регистрация успешна! Проверьте email для подтверждения (если требуется) и войдите.
+          </div>
+        )}
+
+        {confirmed && (
+          <div className="text-sm text-green-600 bg-green-50 p-3 rounded border border-green-200">
+            Email подтверждён! Теперь вы можете войти.
+          </div>
+        )}
+
+        {passwordReset && (
+          <div className="text-sm text-green-600 bg-green-50 p-3 rounded border border-green-200">
+            Пароль успешно изменён! Войдите с новым паролем.
           </div>
         )}
 
