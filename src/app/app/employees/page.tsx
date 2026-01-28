@@ -16,12 +16,24 @@ export default async function EmployeesPage() {
   if (!userData.user) redirect('/login');
 
   // fetch profile to ensure admin
-  const { data: profile } = await supabase.from('profiles').select('role').single();
-  if (profile?.role !== 'admin') redirect('/app');
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, org_id')
+    .eq('id', userData.user.id)
+    .single();
+  
+  if (profileError || !profile) {
+    console.error('Profile error:', profileError);
+    // Если профиля нет - редирект на главную
+    redirect('/app');
+  }
+  
+  if (profile.role !== 'admin') redirect('/app');
 
   const { data: employees, error } = await supabase
     .from('employees')
     .select('id, code, full_name, role, active, created_at')
+    .eq('org_id', profile.org_id)
     .order('role', { ascending: true })
     .order('code', { ascending: true });
 

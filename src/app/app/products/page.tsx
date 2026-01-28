@@ -30,12 +30,24 @@ export default async function ProductsPage() {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role, org_id').single();
-  if (profile?.role !== 'admin') redirect('/app');
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, org_id')
+    .eq('id', userData.user.id)
+    .single();
+  
+  if (profileError || !profile) {
+    console.error('Profile error:', profileError);
+    // Если профиля нет - редирект на главную
+    redirect('/app');
+  }
+  
+  if (profile.role !== 'admin') redirect('/app');
 
   const { data: products, error } = await supabase
     .from('products')
     .select('id, display, kind, base_rate, active, created_at')
+    .eq('org_id', profile.org_id)
     .order('active', { ascending: false })
     .order('kind', { ascending: true })
     .order('display', { ascending: true });
