@@ -3,11 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3005",
-    "dev:watch": "nodemon",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start -p 3005",
-    "lint": "eslint"
+    "start": "next start"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.3.2",
