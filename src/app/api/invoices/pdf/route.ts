@@ -32,7 +32,7 @@ export async function GET(req: Request) {
 
     console.log("PDF_SUCCESS", pdfBytes.length, "bytes");
 
-    return new Response(pdfBytes.buffer, {
+    return new Response(pdfBytes as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
