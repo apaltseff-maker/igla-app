@@ -8,14 +8,57 @@ create table if not exists public.organizations (
   created_at timestamptz not null default now()
 );
 
--- 2) Add org_id to profiles if not exists
+-- 2) Ensure profiles table exists with id column
+-- Check if profiles table exists, if not create it
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.tables 
+    where table_schema = 'public' and table_name = 'profiles'
+  ) then
+    create table public.profiles (
+      id uuid primary key references auth.users(id) on delete cascade,
+      role text,
+      created_at timestamptz default now(),
+      updated_at timestamptz default now()
+    );
+  else
+    -- If table exists, ensure id column exists
+    if not exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' 
+      and table_name = 'profiles' 
+      and column_name = 'id'
+    ) then
+      -- If id doesn't exist, check for user_id
+      if exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public' 
+        and table_name = 'profiles' 
+        and column_name = 'user_id'
+      ) then
+        -- Rename user_id to id
+        alter table public.profiles rename column user_id to id;
+      else
+        -- Add id column
+        alter table public.profiles add column id uuid references auth.users(id) on delete cascade;
+        -- Update existing rows (if any)
+        update public.profiles set id = auth.uid() where id is null;
+        -- Make it primary key if not already
+        alter table public.profiles add primary key (id);
+      end if;
+    end if;
+  end if;
+end $$;
+
+-- 3) Add org_id to profiles if not exists
 alter table public.profiles
   add column if not exists org_id uuid references public.organizations(id);
 
--- 3) Create index on profiles.org_id
+-- 4) Create index on profiles.org_id
 create index if not exists profiles_org_id_idx on public.profiles(org_id);
 
--- 4) Function to create org + profile on new user
+-- 5) Function to create org + profile on new user
 create or replace function public.handle_new_user_create_org()
 returns trigger
 language plpgsql
@@ -43,19 +86,19 @@ begin
 end;
 $$;
 
--- 5) Drop existing trigger if exists
+-- 6) Drop existing trigger if exists
 drop trigger if exists on_auth_user_created_create_org on auth.users;
 
--- 6) Create trigger on auth.users
+-- 7) Create trigger on auth.users
 create trigger on_auth_user_created_create_org
 after insert on auth.users
 for each row
 execute function public.handle_new_user_create_org();
 
--- 7) Enable RLS on organizations
+-- 8) Enable RLS on organizations
 alter table public.organizations enable row level security;
 
--- 8) RLS policy: users can only see their own organization
+-- 9) RLS policy: users can only see their own organization
 drop policy if exists "org_select_own" on public.organizations;
 create policy "org_select_own"
 on public.organizations for select
@@ -63,7 +106,7 @@ using (
   id = (select org_id from public.profiles where id = auth.uid())
 );
 
--- 9) RLS policy: users can update their own organization
+-- 10) RLS policy: users can update their own organization
 drop policy if exists "org_update_own" on public.organizations;
 create policy "org_update_own"
 on public.organizations for update
@@ -74,23 +117,23 @@ with check (
   id = (select org_id from public.profiles where id = auth.uid())
 );
 
--- 10) Ensure profiles RLS is enabled
+-- 11) Ensure profiles RLS is enabled
 alter table public.profiles enable row level security;
 
--- 11) RLS policy: users can select their own profile
+-- 12) RLS policy: users can select their own profile
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own"
 on public.profiles for select
 using (id = auth.uid());
 
--- 12) RLS policy: users can update their own profile
+-- 13) RLS policy: users can update their own profile
 drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own"
 on public.profiles for update
 using (id = auth.uid())
 with check (id = auth.uid());
 
--- 13) For existing users without org_id: create default org and assign
+-- 14) For existing users without org_id: create default org and assign
 -- This handles users that were created before this migration
 do $$
 declare
@@ -114,5 +157,5 @@ begin
 end;
 $$;
 
--- 14) Notify PostgREST to reload schema
+-- 15) Notify PostgREST to reload schema
 notify pgrst, 'reload schema';
