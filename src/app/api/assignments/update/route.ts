@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   const { data: profile, error: profErr } = await supabase
     .from("profiles")
     .select("org_id")
-    .eq("user_id", userData.user.id)
+    .eq("id", userData.user.id)
     .single();
 
   if (profErr || !profile?.org_id) {
