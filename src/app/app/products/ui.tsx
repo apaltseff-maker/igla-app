@@ -37,7 +37,9 @@ export function ProductsTableClient({ products: initialProducts }: { products: P
   });
 
   async function updateProduct(productId: string, field: "display" | "base_rate", value: string | number) {
-    // Validate
+    // Validate and prepare value for API
+    let apiValue: string | number | null;
+    
     if (field === "display") {
       const trimmed = String(value).trim();
       if (!trimmed) {
@@ -47,7 +49,7 @@ export function ProductsTableClient({ products: initialProducts }: { products: P
         }));
         return;
       }
-      value = trimmed;
+      apiValue = trimmed;
     } else if (field === "base_rate") {
       const num = typeof value === "string" ? Number(value.replace(",", ".")) : value;
       if (!Number.isFinite(num) || num < 0) {
@@ -57,7 +59,9 @@ export function ProductsTableClient({ products: initialProducts }: { products: P
         }));
         return;
       }
-      value = num === 0 ? null : num;
+      apiValue = num === 0 ? null : num;
+    } else {
+      apiValue = value;
     }
 
     // Set saving state
@@ -72,7 +76,7 @@ export function ProductsTableClient({ products: initialProducts }: { products: P
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product_id: productId,
-          [field]: value,
+          [field]: apiValue,
         }),
       });
 
@@ -86,14 +90,14 @@ export function ProductsTableClient({ products: initialProducts }: { products: P
       const updatedProduct = products.find((p) => p.id === productId);
       if (updatedProduct) {
         setProducts((prev) =>
-          prev.map((p) => (p.id === productId ? { ...p, [field]: value } : p))
+          prev.map((p) => (p.id === productId ? { ...p, [field]: apiValue } : p))
         );
         // Update field values
         setFieldValues((prev) => ({
           ...prev,
           [productId]: {
             ...prev[productId],
-            [field]: field === "base_rate" ? (value === null ? "" : String(value)) : String(value),
+            [field]: field === "base_rate" ? (apiValue === null ? "" : String(apiValue)) : String(apiValue),
           },
         }));
       }
