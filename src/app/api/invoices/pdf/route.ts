@@ -19,9 +19,14 @@ export async function GET(req: Request) {
     console.log("PDF_RENDERING", invoice_id);
     const pdfBuffer = await renderInvoicePdf(invoice_id);
 
-    console.log("PDF_SUCCESS", pdfBuffer.length, "bytes");
+    // Convert Buffer to Uint8Array (Buffer is Uint8Array-like but TypeScript needs explicit conversion)
+    const pdfBytes = pdfBuffer instanceof Uint8Array 
+      ? pdfBuffer 
+      : new Uint8Array(pdfBuffer);
 
-    return new NextResponse(pdfBuffer, {
+    console.log("PDF_SUCCESS", pdfBytes.length, "bytes");
+
+    return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
