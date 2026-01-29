@@ -2,64 +2,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import * as XLSX from 'xlsx';
 
-const VALID_KINDS = [
-  'платье',
-  'футболка',
-  'свитшот',
-  'лосины',
-  'брюки',
-  'бомбер',
-  'шорты',
-  'куртка',
-  'костюм',
-  'туника',
-  'сарафан',
-  'юбка',
-  'худи',
-  'капри',
-  'джинсы',
-  'топ',
-  'блузка',
-  'рубашка',
-] as const;
-
-/** Алиасы и опечатки → валидный тип изделия. Неизвестные значения мапятся в "платье". */
-const KIND_ALIASES: Record<string, (typeof VALID_KINDS)[number]> = {
-  хелкарт: 'куртка',
-  'хелкарт мех': 'куртка',
-  'хелкарт шлица': 'куртка',
-  хелкартф: 'куртка',
-  шлица: 'юбка',
-  космосмесь: 'платье',
-  космопал: 'платье',
-  'квд 2': 'платье',
-  'ланселот шерсть': 'свитшот',
-  лексипик: 'топ',
-  гуанчжоу: 'платье',
-  эйдора: 'платье',
-  эйдораам: 'платье',
-  трояам: 'платье',
-  дорея: 'платье',
-  селиса: 'платье',
-  лора: 'платье',
-  аннора: 'платье',
-  мона: 'платье',
-  тая: 'платье',
-  эира: 'платье',
-  рани: 'платье',
-  индира: 'платье',
-  'крис (лапша)': 'платье',
-  кардиган: 'куртка',
-  свитер: 'свитшот',
-  'свитер с капюшоном': 'худи',
-};
-
-function normalizeKind(raw: string): (typeof VALID_KINDS)[number] {
-  const k = raw.toLowerCase().trim();
-  if ((VALID_KINDS as readonly string[]).includes(k)) return k as (typeof VALID_KINDS)[number];
-  return KIND_ALIASES[k] ?? 'платье';
-}
-
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -108,9 +50,9 @@ export async function POST(req: Request) {
       const row = data[i];
       if (!row || row.length < 1) continue;
 
-      // Колонки: [тип, название, расценка]. Если одна колонка — считаем её названием.
-      const kindRaw = row.length >= 2 ? String(row[0] || '').trim().toLowerCase() : '';
-      const display = (row.length >= 2 ? String(row[1] || '').trim() : String(row[0] || '').trim());
+      // Колонки: [тип, название, расценка]. Обязательно только название. Тип берём как есть, пусто → "платье".
+      const kindRaw = row.length >= 2 ? String(row[0] ?? '').trim() : '';
+      const display = (row.length >= 2 ? String(row[1] ?? '').trim() : String(row[0] ?? '').trim());
       const baseRateRaw = row[2] ? String(row[2]).trim() : '';
 
       if (!display) {
@@ -118,10 +60,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const normalizedKind = kindRaw ? normalizeKind(kindRaw) : 'платье';
-      if (kindRaw && normalizedKind !== kindRaw && (VALID_KINDS as readonly string[]).indexOf(kindRaw) === -1) {
-        errors.push(`Строка ${i + 1}: тип "${kindRaw}" заменён на "${normalizedKind}"`);
-      }
+      const kind = kindRaw || 'платье';
 
       const base_rate = baseRateRaw === '' || baseRateRaw === null || baseRateRaw === undefined
         ? null
@@ -134,7 +73,7 @@ export async function POST(req: Request) {
 
       products.push({
         org_id: profile.org_id,
-        kind: normalizedKind,
+        kind,
         display,
         base_rate,
         active: true,
@@ -148,10 +87,10 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Вставляем модели
+    // Upsert по (org_id, display): обновляем существующие, добавляем новые
     const { data: inserted, error: insertError } = await supabase
       .from('products')
-      .insert(products)
+      .upsert(products, { onConflict: 'org_id,display', ignoreDuplicates: false })
       .select();
 
     if (insertError) {
