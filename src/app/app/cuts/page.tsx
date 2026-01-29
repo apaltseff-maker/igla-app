@@ -1,8 +1,15 @@
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { BackButton } from "@/components/BackButton";
-import CutsTableClient from "./table-client";
+import { TableSkeleton } from "../_components/table-skeleton";
+
+const CutsTableClient = dynamic(() => import("./table-client"), {
+  loading: () => <TableSkeleton rows={8} cols={8} />,
+});
+
+export const revalidate = 30;
 
 export default async function CutsListPage({
   searchParams,

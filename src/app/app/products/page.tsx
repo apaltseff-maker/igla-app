@@ -1,8 +1,23 @@
+import dynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { ProductsTableClient } from './ui';
-import ExcelUploadClient from './excel-upload-client';
-import { EnsureProfileBlock } from '../_components/ensure-profile-block';
+import { TableSkeleton } from '../_components/table-skeleton';
+
+const ExcelUploadClient = dynamic(() => import('./excel-upload-client'), {
+  ssr: false,
+  loading: () => <span className="text-sm text-muted">…</span>,
+});
+
+const EnsureProfileBlock = dynamic(() => import('../_components/ensure-profile-block').then((m) => ({ default: m.EnsureProfileBlock })), {
+  loading: () => <div className="rounded-lg border p-6 animate-pulse bg-border/20 h-32" />,
+});
+
+const ProductsTableClient = dynamic(
+  () => import('./ui').then((m) => ({ default: m.ProductsTableClient })),
+  { loading: () => <TableSkeleton rows={8} cols={5} /> }
+);
+
+export const revalidate = 30;
 
 const KINDS = [
   'платье',

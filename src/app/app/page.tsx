@@ -10,6 +10,8 @@ function daysAgoISO(days: number) {
   return d.toISOString().slice(0, 10);
 }
 
+export const revalidate = 30;
+
 export default async function AppHomePage() {
   const supabase = await createClient();
 

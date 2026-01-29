@@ -1,6 +1,13 @@
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import AssignmentsClient from "./ui";
+import { TableSkeleton } from "../_components/table-skeleton";
+
+const AssignmentsClient = dynamic(() => import("./ui"), {
+  loading: () => <TableSkeleton rows={5} cols={6} />,
+});
+
+export const revalidate = 30;
 
 export default async function AssignmentsPage() {
   const supabase = await createClient();

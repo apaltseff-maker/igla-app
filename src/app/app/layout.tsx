@@ -33,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
     return (
     <div className="min-h-screen bg-bg">
+      <PreconnectSupabase />
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
         {/* Sidebar */}
         <aside className="bg-card border-b md:border-b-0 md:border-r border-border md:min-h-screen flex flex-col">

@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Меньше JS на старых устройствах: дерево-шейк тяжёлых пакетов
+  experimental: {
+    optimizePackageImports: ["@supabase/supabase-js"],
+  },
 };
 
 export default nextConfig;

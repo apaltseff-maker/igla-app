@@ -7,6 +7,8 @@ function toISODate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+export const revalidate = 30;
+
 export default async function PayrollPage({
   searchParams,
 }: {
