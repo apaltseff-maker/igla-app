@@ -1,14 +1,8 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ExcelUploadClient from './excel-upload-client';
+import EmployeesTableClient from './employees-table-client';
 import { EnsureProfileBlock } from '../_components/ensure-profile-block';
-
-const ROLE_LABEL: Record<string, string> = {
-  admin: 'Админ',
-  cutter: 'Закрой',
-  packer: 'Упаковка',
-  sewer: 'Швея',
-};
 
 export default async function EmployeesPage() {
   const supabase = await createClient();
@@ -82,6 +76,59 @@ export default async function EmployeesPage() {
     redirect('/app/employees');
   }
 
+  async function updateEmployee(formData: FormData) {
+    'use server';
+    const supabase = await createClient();
+    const id = String(formData.get('id') || '').trim();
+    const code = String(formData.get('code') || '').trim();
+    const full_name = String(formData.get('full_name') || '').trim();
+    if (!id || !code || !full_name) throw new Error('Нужны id, код и ФИО');
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Не авторизован');
+    const { data: profile, error: pErr } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.user.id)
+      .single();
+    if (pErr || !profile?.org_id) throw new Error(pErr?.message || 'Нет org_id');
+
+    const { error } = await supabase
+      .from('employees')
+      .update({ code, full_name })
+      .eq('id', id)
+      .eq('org_id', profile.org_id);
+    if (error) throw new Error(error.message);
+
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath('/app/employees');
+  }
+
+  async function deactivateEmployee(employeeId: string) {
+    'use server';
+    const supabase = await createClient();
+    if (!employeeId) throw new Error('Нужен id сотрудника');
+
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('Не авторизован');
+    const { data: profile, error: pErr } = await supabase
+      .from('profiles')
+      .select('org_id')
+      .eq('id', user.user.id)
+      .single();
+    if (pErr || !profile?.org_id) throw new Error(pErr?.message || 'Нет org_id');
+
+    const { error } = await supabase
+      .from('employees')
+      .update({ active: false })
+      .eq('id', employeeId)
+      .eq('org_id', profile.org_id);
+    if (error) throw new Error(error.message);
+
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath('/app/employees');
+  }
+
   return (
     <main className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -119,36 +166,14 @@ export default async function EmployeesPage() {
       </form>
 
       <section className="space-y-2">
-        <div className="font-medium">Список</div>
+        <div className="font-medium">Список (можно менять номер и ФИО; удаление — снятие с учёта, в ведомости по ЗП остаётся)</div>
         {error && <div className="text-sm text-red-600">{error.message}</div>}
 
-        <div className="overflow-auto border rounded-lg">
-          <table className="min-w-[720px] w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left p-2">Код</th>
-                <th className="text-left p-2">ФИО</th>
-                <th className="text-left p-2">Роль</th>
-                <th className="text-left p-2">Активен</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(employees || []).map((e) => (
-                <tr key={e.id} className="border-t">
-                  <td className="p-2">{e.code}</td>
-                  <td className="p-2">{e.full_name}</td>
-                  <td className="p-2">{ROLE_LABEL[e.role] ?? e.role}</td>
-                  <td className="p-2">{e.active ? 'Да' : 'Нет'}</td>
-                </tr>
-              ))}
-              {employees?.length === 0 && (
-                <tr>
-                  <td className="p-2 text-gray-500" colSpan={4}>Пока пусто</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <EmployeesTableClient
+          employees={(employees || []) as { id: string; code: string; full_name: string; role: string; active: boolean | null }[]}
+          updateEmployee={updateEmployee}
+          deactivateEmployee={deactivateEmployee}
+        />
       </section>
     </main>
   );
