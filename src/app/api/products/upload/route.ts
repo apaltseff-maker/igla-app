@@ -23,6 +23,43 @@ const VALID_KINDS = [
   'рубашка',
 ] as const;
 
+/** Алиасы и опечатки → валидный тип изделия. Неизвестные значения мапятся в "платье". */
+const KIND_ALIASES: Record<string, (typeof VALID_KINDS)[number]> = {
+  хелкарт: 'куртка',
+  'хелкарт мех': 'куртка',
+  'хелкарт шлица': 'куртка',
+  хелкартф: 'куртка',
+  шлица: 'юбка',
+  космосмесь: 'платье',
+  космопал: 'платье',
+  'квд 2': 'платье',
+  'ланселот шерсть': 'свитшот',
+  лексипик: 'топ',
+  гуанчжоу: 'платье',
+  эйдора: 'платье',
+  эйдораам: 'платье',
+  трояам: 'платье',
+  дорея: 'платье',
+  селиса: 'платье',
+  лора: 'платье',
+  аннора: 'платье',
+  мона: 'платье',
+  тая: 'платье',
+  эира: 'платье',
+  рани: 'платье',
+  индира: 'платье',
+  'крис (лапша)': 'платье',
+  кардиган: 'куртка',
+  свитер: 'свитшот',
+  'свитер с капюшоном': 'худи',
+};
+
+function normalizeKind(raw: string): (typeof VALID_KINDS)[number] {
+  const k = raw.toLowerCase().trim();
+  if ((VALID_KINDS as readonly string[]).includes(k)) return k as (typeof VALID_KINDS)[number];
+  return KIND_ALIASES[k] ?? 'платье';
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -80,9 +117,9 @@ export async function POST(req: Request) {
         continue;
       }
 
-      if (!VALID_KINDS.includes(kind as any)) {
-        errors.push(`Строка ${i + 1}: неверный тип изделия "${kind}"`);
-        continue;
+      const normalizedKind = normalizeKind(kind);
+      if (normalizedKind !== kind && (VALID_KINDS as readonly string[]).indexOf(kind) === -1) {
+        errors.push(`Строка ${i + 1}: тип "${kind}" заменён на "${normalizedKind}"`);
       }
 
       const base_rate = baseRateRaw === '' || baseRateRaw === null || baseRateRaw === undefined
@@ -96,7 +133,7 @@ export async function POST(req: Request) {
 
       products.push({
         org_id: profile.org_id,
-        kind,
+        kind: normalizedKind,
         display,
         base_rate,
         active: true,
