@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { TableSkeleton } from '../_components/table-skeleton';
 
 const ExcelUploadClient = dynamic(() => import('./excel-upload-client'), {
-  ssr: false,
   loading: () => <span className="text-sm text-muted">…</span>,
 });
 
