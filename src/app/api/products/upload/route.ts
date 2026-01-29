@@ -87,10 +87,20 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
+    // Дедупликация по (org_id, display): в файле могут быть повторы — один ключ = одна строка для upsert
+    const seen = new Map<string, (typeof products)[0]>();
+    for (const p of products) {
+      seen.set(p.display, p);
+    }
+    const uniqueProducts = Array.from(seen.values());
+    if (uniqueProducts.length < products.length) {
+      errors.push(`В файле найдены дубликаты по названию — обработано уникальных: ${uniqueProducts.length} из ${products.length}`);
+    }
+
     // Upsert по (org_id, display): обновляем существующие, добавляем новые
     const { data: inserted, error: insertError } = await supabase
       .from('products')
-      .upsert(products, { onConflict: 'org_id,display', ignoreDuplicates: false })
+      .upsert(uniqueProducts, { onConflict: 'org_id,display', ignoreDuplicates: false })
       .select();
 
     if (insertError) {
