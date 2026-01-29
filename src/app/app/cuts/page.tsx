@@ -7,11 +7,12 @@ import CutsTableClient from "./table-client";
 export default async function CutsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; bundle?: string }>;
+  searchParams: Promise<{ q?: string; bundle?: string; error?: string }>;
 }) {
   const sp = await searchParams;
   const q = (sp.q || "").trim();
   const bundle = (sp.bundle || "").trim();
+  const errorParam = sp.error;
 
   const supabase = await createClient();
   const { data: userData } = await supabase.auth.getUser();
@@ -72,6 +73,11 @@ export default async function CutsListPage({
         </div>
       )}
 
+      {errorParam === 'not_found' && (
+        <div className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          Крой не найден или нет доступа. Если только что создали крой — обновите страницу.
+        </div>
+      )}
       {cutsErr && <div className="text-sm text-red-600">{cutsErr.message}</div>}
 
       {/* Фильтры + кнопка "Искать" справа */}

@@ -37,10 +37,13 @@ export default async function CutDetailsPage({
     .select('id, cut_date, cut_name, note, cutter_employee_id, org_id')
     .eq('id', cutId)
     .eq('org_id', profile.org_id)
-    .single();
+    .maybeSingle();
 
-  if (cutErr || !cut) {
-    throw new Error(cutErr?.message || 'Крой не найден');
+  if (cutErr) {
+    throw new Error(cutErr.message);
+  }
+  if (!cut) {
+    redirect('/app/cuts?error=not_found');
   }
 
   // Список закройщиков для шапки
@@ -59,12 +62,9 @@ export default async function CutDetailsPage({
     .eq('active', true)
     .order('display', { ascending: true });
 
-  // Позиции + пачки + агрегаты выдачи/упаковки по пачке
+  // Позиции + пачки + агрегаты выдачи/упаковки по пачке (для нового кроя — пустой массив)
   const { data: items, error: itemsErr } = await supabase.rpc('cut_items_with_bundle_stats', { p_cut_id: cutId });
-
-  if (itemsErr) {
-    throw new Error(itemsErr.message);
-  }
+  const safeItems = itemsErr ? [] : (items ?? []);
 
   const lastProductId = sp.product_id ?? '';
   const lastColor = sp.color ?? '';
@@ -106,7 +106,7 @@ export default async function CutDetailsPage({
       {/* Шапка кроя с редактированием */}
       <CutHeaderClient
         cut_id={cut.id}
-        cut_date={cut.cut_date}
+        cut_date={cut.cut_date != null ? String(cut.cut_date) : null}
         cut_name={cut.cut_name ?? ''}
         cutter_employee_id={cut.cutter_employee_id ?? ''}
         note={cut.note}
@@ -148,7 +148,7 @@ export default async function CutDetailsPage({
         products={(products || []) as { id: string; display: string }[]}
         initialProductId={lastProductId}
         initialColor={lastColor}
-        initialItems={(items || []) as any[]}
+        initialItems={safeItems as any[]}
       />
     </main>
   );
