@@ -106,20 +106,21 @@ export async function POST(req: Request) {
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
-      if (!row || row.length < 2) continue;
+      if (!row || row.length < 1) continue;
 
-      const kind = String(row[0] || '').trim().toLowerCase();
-      const display = String(row[1] || '').trim();
+      // Колонки: [тип, название, расценка]. Если одна колонка — считаем её названием.
+      const kindRaw = row.length >= 2 ? String(row[0] || '').trim().toLowerCase() : '';
+      const display = (row.length >= 2 ? String(row[1] || '').trim() : String(row[0] || '').trim());
       const baseRateRaw = row[2] ? String(row[2]).trim() : '';
 
-      if (!kind || !display) {
-        errors.push(`Строка ${i + 1}: пропущены обязательные поля (тип изделия, название)`);
+      if (!display) {
+        errors.push(`Строка ${i + 1}: пропущено обязательное поле (название)`);
         continue;
       }
 
-      const normalizedKind = normalizeKind(kind);
-      if (normalizedKind !== kind && (VALID_KINDS as readonly string[]).indexOf(kind) === -1) {
-        errors.push(`Строка ${i + 1}: тип "${kind}" заменён на "${normalizedKind}"`);
+      const normalizedKind = kindRaw ? normalizeKind(kindRaw) : 'платье';
+      if (kindRaw && normalizedKind !== kindRaw && (VALID_KINDS as readonly string[]).indexOf(kindRaw) === -1) {
+        errors.push(`Строка ${i + 1}: тип "${kindRaw}" заменён на "${normalizedKind}"`);
       }
 
       const base_rate = baseRateRaw === '' || baseRateRaw === null || baseRateRaw === undefined
