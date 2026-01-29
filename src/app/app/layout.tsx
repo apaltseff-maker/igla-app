@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NavLinkClient } from "./nav-link-client";
+import { PreconnectSupabase } from "./_components/preconnect-supabase";
 
 const navItems = [
   { href: "/app", label: "Главная", icon: "🏠" },
