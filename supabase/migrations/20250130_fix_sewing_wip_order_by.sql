@@ -1,5 +1,8 @@
--- sewing_wip: ORDER BY b.cut_date but cut_date was not in GROUP BY -> error in production
-CREATE OR REPLACE FUNCTION sewing_wip()
+-- sewing_wip: 1) DROP to avoid "structure does not match" from old overloads
+-- 2) ORDER BY b.cut_date requires b.cut_date in GROUP BY
+DROP FUNCTION IF EXISTS sewing_wip();
+
+CREATE FUNCTION sewing_wip()
 RETURNS TABLE (
   id uuid,
   org_id uuid,
@@ -32,19 +35,19 @@ BEGIN
   
   RETURN QUERY
   SELECT 
-    a.id,
-    b.org_id,
-    a.bundle_id,
-    b.bundle_no,
-    b.cut_name,
-    b.color,
-    b.size,
-    a.sewer_employee_id,
-    e.code AS sewer_code,
-    e.full_name AS sewer_name,
-    a.qty AS assigned_qty,
-    COALESCE(SUM(pe.packed_qty), 0)::numeric AS packed_qty,
-    (a.qty - COALESCE(SUM(pe.packed_qty), 0))::numeric AS remaining_qty
+    a.id::uuid,
+    b.org_id::uuid,
+    a.bundle_id::uuid,
+    b.bundle_no::text,
+    b.cut_name::text,
+    b.color::text,
+    b.size::text,
+    a.sewer_employee_id::uuid,
+    e.code::text,
+    e.full_name::text,
+    a.qty::numeric,
+    COALESCE(SUM(pe.packed_qty), 0)::numeric,
+    (a.qty - COALESCE(SUM(pe.packed_qty), 0))::numeric
   FROM sewing_assignments a
   INNER JOIN cut_bundles b ON b.id = a.bundle_id
   INNER JOIN employees e ON e.id = a.sewer_employee_id
@@ -56,3 +59,5 @@ BEGIN
   ORDER BY b.cut_date DESC NULLS LAST, e.code;
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION sewing_wip() TO authenticated;
