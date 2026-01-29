@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ExcelUploadClient from './excel-upload-client';
+import { EnsureProfileBlock } from '../_components/ensure-profile-block';
 
 const ROLE_LABEL: Record<string, string> = {
   admin: 'Админ',
@@ -15,30 +16,23 @@ export default async function EmployeesPage() {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) redirect('/login');
 
-  // fetch profile to ensure admin
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('role, org_id')
     .eq('id', userData.user.id)
     .single();
-  
-  if (profileError) {
-    console.error('Profile error:', profileError);
-    // Если ошибка RLS или профиль не найден - редирект на главную
-    redirect('/app');
+
+  if (profileError || !profile || !profile.org_id) {
+    return (
+      <EnsureProfileBlock
+        title="Сотрудники"
+        description="Чтобы открыть справочник, нужно создать организацию для вашего аккаунта."
+      />
+    );
   }
-  
-  if (!profile) {
-    console.error('Profile not found for user:', userData.user.id);
-    redirect('/app');
-  }
-  
-  if (!profile.org_id) {
-    console.error('User has no org_id:', userData.user.id);
-    redirect('/app');
-  }
-  
-  if (profile.role !== 'admin') redirect('/app');
+
+  const role = (profile.role ?? '').toString().toLowerCase();
+  if (role && role !== 'admin') redirect('/app');
 
   const { data: employees, error } = await supabase
     .from('employees')

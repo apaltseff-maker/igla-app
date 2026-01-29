@@ -1,6 +1,12 @@
 -- Migration: Fix SQL functions that use profiles.user_id instead of profiles.id
 -- Problem: SQL functions cuts_list_with_stats, bundles_not_assigned, sewing_wip, cut_items_with_bundle_stats
 -- may reference p.user_id or profiles.user_id, but the column is actually 'id'
+-- DROP first: PostgreSQL does not allow changing return type of existing function.
+
+DROP FUNCTION IF EXISTS cuts_list_with_stats(uuid, text);
+DROP FUNCTION IF EXISTS bundles_not_assigned();
+DROP FUNCTION IF EXISTS sewing_wip();
+DROP FUNCTION IF EXISTS cut_items_with_bundle_stats(uuid);
 
 -- Fix cuts_list_with_stats function (if it exists)
 CREATE OR REPLACE FUNCTION cuts_list_with_stats(
@@ -28,10 +34,10 @@ AS $$
 DECLARE
   v_org_id uuid;
 BEGIN
-  -- Get current user's org_id
-  SELECT org_id INTO v_org_id
-  FROM profiles
-  WHERE id = auth.uid();
+  -- Get current user's org_id (qualify to avoid ambiguity)
+  SELECT p.org_id INTO v_org_id
+  FROM public.profiles p
+  WHERE p.id = auth.uid();
   
   IF v_org_id IS NULL THEN
     RETURN;
@@ -102,10 +108,10 @@ AS $$
 DECLARE
   v_org_id uuid;
 BEGIN
-  -- Get current user's org_id
-  SELECT org_id INTO v_org_id
-  FROM profiles
-  WHERE id = auth.uid();
+  -- Get current user's org_id (qualify to avoid ambiguity)
+  SELECT p.org_id INTO v_org_id
+  FROM public.profiles p
+  WHERE p.id = auth.uid();
   
   IF v_org_id IS NULL THEN
     RETURN;
@@ -161,10 +167,10 @@ AS $$
 DECLARE
   v_org_id uuid;
 BEGIN
-  -- Get current user's org_id
-  SELECT org_id INTO v_org_id
-  FROM profiles
-  WHERE id = auth.uid();
+  -- Get current user's org_id (qualify to avoid ambiguity)
+  SELECT p.org_id INTO v_org_id
+  FROM public.profiles p
+  WHERE p.id = auth.uid();
   
   IF v_org_id IS NULL THEN
     RETURN;
@@ -219,10 +225,10 @@ AS $$
 DECLARE
   v_org_id uuid;
 BEGIN
-  -- Get current user's org_id
-  SELECT org_id INTO v_org_id
-  FROM profiles
-  WHERE id = auth.uid();
+  -- Get current user's org_id (qualify to avoid ambiguity)
+  SELECT p.org_id INTO v_org_id
+  FROM public.profiles p
+  WHERE p.id = auth.uid();
   
   IF v_org_id IS NULL THEN
     RETURN;
@@ -230,8 +236,8 @@ BEGIN
   
   -- Verify cut belongs to user's org
   IF NOT EXISTS (
-    SELECT 1 FROM cuts
-    WHERE id = p_cut_id AND org_id = v_org_id
+    SELECT 1 FROM public.cuts c
+    WHERE c.id = p_cut_id AND c.org_id = v_org_id
   ) THEN
     RETURN;
   END IF;

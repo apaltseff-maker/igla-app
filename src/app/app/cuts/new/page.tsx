@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { BackButton } from '@/components/BackButton';
+import { EnsureProfileBlock } from '../../_components/ensure-profile-block';
 
 export default async function CutCreatePage() {
   const supabase = await createClient();
@@ -13,9 +14,17 @@ export default async function CutCreatePage() {
     .select('role, org_id')
     .eq('id', userData.user.id)
     .single();
-  
-  if (!profile || !profile.role || !['admin', 'cutter'].includes(profile.role)) redirect('/app');
-  if (!profile.org_id) redirect('/app');
+
+  if (!profile || !profile.org_id) {
+    return (
+      <EnsureProfileBlock
+        title="Создать ID кроя"
+        description="Чтобы создать крой, нужно создать организацию для вашего аккаунта."
+      />
+    );
+  }
+  const role = (profile.role ?? '').toString().toLowerCase();
+  if (role && !['admin', 'cutter'].includes(role)) redirect('/app');
 
   const { data: cutters } = await supabase
     .from('employees')

@@ -10,10 +10,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
     }
 
-    // Получаем org_id
     const { data: profile, error: profErr } = await supabase
       .from('profiles')
       .select('org_id, role')
+      .eq('id', userData.user.id)
       .single();
 
     if (profErr || !profile?.org_id) {
@@ -52,16 +52,31 @@ export async function POST(req: Request) {
 
       const code = String(row[0] || '').trim();
       const full_name = String(row[1] || '').trim();
-      const role = String(row[2] || '').trim().toLowerCase();
+      const roleRaw = String(row[2] || '').trim().toLowerCase();
 
-      if (!code || !full_name || !role) {
+      if (!code || !full_name || !roleRaw) {
         errors.push(`Строка ${i + 1}: пропущены обязательные поля`);
         continue;
       }
 
       const validRoles = ['admin', 'cutter', 'packer', 'sewer'];
-      if (!validRoles.includes(role)) {
-        errors.push(`Строка ${i + 1}: неверная роль "${role}" (допустимо: ${validRoles.join(', ')})`);
+      const roleMap: Record<string, string> = {
+        швея: 'sewer',
+        закройщик: 'cutter',
+        закрой: 'cutter',
+        упаковщик: 'packer',
+        упакавщик: 'packer',
+        админ: 'admin',
+        администратор: 'admin',
+        конструктор: 'cutter',
+        технолог: 'cutter',
+        'конструктор/технолог': 'cutter',
+        утюжница: 'packer',
+      };
+      const role = roleMap[roleRaw] || (validRoles.includes(roleRaw) ? roleRaw : '');
+
+      if (!role) {
+        errors.push(`Строка ${i + 1}: неверная роль "${roleRaw}" (допустимо: ${validRoles.join(', ')} или: швея, закройщик, упаковщик, админ)`);
         continue;
       }
 
@@ -74,17 +89,24 @@ export async function POST(req: Request) {
       });
     }
 
-    if (employees.length === 0) {
+    // Убираем дубликаты по code (в одном файле не должно быть двух строк с одним кодом)
+    const byCode = new Map<string, { org_id: string; code: string; full_name: string; role: string; active: boolean }>();
+    for (const e of employees) {
+      byCode.set(e.code, e);
+    }
+    const uniqueEmployees = Array.from(byCode.values());
+
+    if (uniqueEmployees.length === 0) {
       return NextResponse.json({ 
         error: 'Нет валидных данных для загрузки',
         details: errors 
       }, { status: 400 });
     }
 
-    // Вставляем сотрудников
+    // Upsert: при совпадении (org_id, code) обновляем ФИО/роль/активность
     const { data: inserted, error: insertError } = await supabase
       .from('employees')
-      .insert(employees)
+      .upsert(uniqueEmployees, { onConflict: 'org_id,code', ignoreDuplicates: false })
       .select();
 
     if (insertError) {
@@ -94,6 +116,10 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
+    const dupCount = employees.length - uniqueEmployees.length;
+    if (dupCount > 0) {
+      errors.push(`В файле ${dupCount} дублей по коду — учтена последняя строка по каждому коду.`);
+    }
     return NextResponse.json({
       success: true,
       imported: inserted?.length || 0,
