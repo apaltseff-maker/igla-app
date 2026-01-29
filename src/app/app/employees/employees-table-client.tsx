@@ -33,11 +33,14 @@ export default function EmployeesTableClient({
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>, id: string) {
-    e.preventDefault();
-    const form = e.currentTarget;
+  async function handleBlur(id: string) {
+    const form = document.getElementById(`row-${id}`) as HTMLFormElement | null;
+    if (!form) return;
     const formData = new FormData(form);
     formData.set('id', id);
+    const code = formData.get('code')?.toString()?.trim();
+    const full_name = formData.get('full_name')?.toString()?.trim();
+    if (!code || !full_name) return;
     setSavingId(id);
     try {
       await updateEmployee(formData);
@@ -67,24 +70,22 @@ export default function EmployeesTableClient({
             <th className="text-left p-2">ФИО</th>
             <th className="text-left p-2">Роль</th>
             <th className="text-left p-2">Активен</th>
-            <th className="text-left p-2 w-[160px]">Действия</th>
+            <th className="text-left p-2 w-[80px]">Действия</th>
           </tr>
         </thead>
         <tbody>
           {(employees || []).map((e) => (
             <tr key={e.id} className="border-t">
               <td className="p-2">
-                <form
-                  id={`row-${e.id}`}
-                  onSubmit={(ev) => handleSave(ev, e.id)}
-                  className="inline"
-                >
+                <form id={`row-${e.id}`} className="inline" onSubmit={(ev) => ev.preventDefault()}>
                   <input type="hidden" name="id" value={e.id} />
                   <input
                     name="code"
-                    className="border rounded px-2 py-1 w-20"
+                    className="border rounded px-2 py-1 w-20 disabled:opacity-60"
                     defaultValue={e.code}
                     required
+                    disabled={savingId === e.id}
+                    onBlur={() => handleBlur(e.id)}
                   />
                 </form>
               </td>
@@ -92,22 +93,17 @@ export default function EmployeesTableClient({
                 <input
                   form={`row-${e.id}`}
                   name="full_name"
-                  className="border rounded px-2 py-1 w-full min-w-[140px]"
+                  className="border rounded px-2 py-1 w-full min-w-[140px] disabled:opacity-60"
                   defaultValue={e.full_name}
                   required
+                  disabled={savingId === e.id}
+                  onBlur={() => handleBlur(e.id)}
                 />
               </td>
               <td className="p-2 whitespace-nowrap">{ROLE_LABEL[e.role] ?? e.role}</td>
               <td className="p-2">{e.active ? 'Да' : 'Нет'}</td>
               <td className="p-2 flex gap-2">
-                <button
-                  type="submit"
-                  form={`row-${e.id}`}
-                  className="text-xs text-accent hover:underline disabled:opacity-50"
-                  disabled={savingId === e.id}
-                >
-                  {savingId === e.id ? '…' : 'Сохранить'}
-                </button>
+                {savingId === e.id && <span className="text-xs text-muted">…</span>}
                 {e.active && (
                   <button
                     type="button"
