@@ -69,6 +69,7 @@ export default async function CutCreatePage() {
       .single();
 
     if (error) throw new Error(error.message);
+    if (!data?.id) throw new Error('Не удалось создать крой — попробуй ещё раз');
 
     const { redirect } = await import('next/navigation');
     redirect(`/app/cuts/${data.id}`);

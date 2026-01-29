@@ -104,7 +104,7 @@ export default async function CutsListPage({
         </div>
       </form>
 
-      <CutsTableClient cuts={(cuts as any) || []} />
+      <CutsTableClient cuts={((cuts as any) || []).map((c: { id: string; total_qty?: number; [k: string]: unknown }) => ({ ...c, cut_id: c.id, qty_in_cut: c.total_qty }))} />
     </main>
   );
 }
